@@ -1,12 +1,13 @@
 // ==UserScript==
-// @name         WME Simplify Street Geometry
-// @version      0.6
-// @description  Выравнивание сегментов улицы в ровную линию
-// @author       jonny3D
-// @include      https://www.waze.com/editor/*
-// @include      https://www.waze.com/*/editor/*
-// @include      https://beta.waze.com/editor/*
-// @include      https://beta.waze.com/*/editor/*
+// @name         WME Simplify Street Geometry fork
+// @version      0.6.fork.0.0.1
+// @description  Выравнивание сегментов улицы в ровную линию. Автор исходного скрипта - jonny3D
+// @author       impulse200
+// @include				https://www.waze.com/editor*
+// @include				https://www.waze.com/*/editor*
+// @include				https://beta.waze.com/editor*
+// @include				https://beta.waze.com/*/editor*
+// @exclude				https://www.waze.com/*user/editor/*
 // @grant        none
 // @namespace    https://greasyfork.org/users/12985
 // ==/UserScript==
@@ -18,7 +19,7 @@ function SimplifyStreetGeometry() {
     MoveNode = require("Waze/Action/MoveNode");
     AddNode = require("Waze/Action/AddNode");
 
-    Waze.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
+    W.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
 
     function insertSimplifyStreetGeometryButtons() {
         $('.edit-restrictions').after('<button id="SimplifyStreetGeometry" class="action-button btn btn-default">Выровнять улицу</button>');
@@ -30,7 +31,7 @@ function SimplifyStreetGeometry() {
     });
 
     function DoSimplifyStreetGeometry() {
-        if (Waze.selectionManager.selectedItems.length > 0) {
+        if (W.selectionManager.selectedItems.length > 0) {
             var T1, T2,
                 t,
                 A = 0.0,
@@ -39,12 +40,12 @@ function SimplifyStreetGeometry() {
             var correct = true;
 
 			// определим линию выравнивания
-			if (Waze.selectionManager.selectedItems.length > 0) {
+			if (W.selectionManager.selectedItems.length > 0) {
 
 				console.log("WME-SSG: расчёт формулы наклонной прямой...");
 
-				for (var e = 0; e < Waze.selectionManager.selectedItems.length; e++) {
-					var segment = Waze.selectionManager.selectedItems[e];
+				for (var e = 0; e < W.selectionManager.selectedItems.length; e++) {
+					var segment = W.selectionManager.selectedItems[e];
 
 					if (segment.model.type != "segment")
 						continue;
@@ -122,11 +123,11 @@ function SimplifyStreetGeometry() {
 				seg1geo.comments[1].x = T2.x;
 				seg1geo.comments[1].y = T2.y;
 
-				var newseg1 = new Waze.Feature.Vector.Segment(seg1geo);
+				var newseg1 = new W.Feature.Vector.Segment(seg1geo);
 				newseg1.attributes.fromNodeID = null;
 				newseg1.attributes.toNodeID = null;
 
-				Waze.model.actionManager.add(new Waze.Action.AddSegment(newseg1));*/
+				W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
 
 			} else
 				correct = false;
@@ -135,8 +136,8 @@ function SimplifyStreetGeometry() {
 			{
 				console.log("WME-SSG: выравниваем сегменты...");
 
-				for (var e2 = 0; e2 < Waze.selectionManager.selectedItems.length; e2++) {
-					var segment2 = Waze.selectionManager.selectedItems[e2];
+				for (var e2 = 0; e2 < W.selectionManager.selectedItems.length; e2++) {
+					var segment2 = W.selectionManager.selectedItems[e2];
 					var model = segment2.model;
 
 					if (model.type != "segment")
@@ -153,12 +154,12 @@ function SimplifyStreetGeometry() {
 
 					// упрощаем сегмент, если нужно
 					if (flagSimpled)
-						Waze.model.actionManager.add(new UpdateSegmentGeometry(model, model.geometry, newGeometry));
+						W.model.actionManager.add(new UpdateSegmentGeometry(model, model.geometry, newGeometry));
 
 					//alert(model.attributes.fromNodeID);
 
 					// работа с узлом
-					var node = Waze.model.nodes.get(model.attributes.fromNodeID);
+					var node = W.model.nodes.get(model.attributes.fromNodeID);
 					var nodeGeo = node.geometry.clone();
 					var W = nodeGeo.y * A - nodeGeo.x * B;
 
@@ -171,10 +172,10 @@ function SimplifyStreetGeometry() {
 
 					/*var segments = [];
 					segments.push(model);
-					Waze.model.actionManager.add(new AddNode(nodeGeo, model));*/
-					Waze.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
+					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
+					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
 
-					var node2 = Waze.model.nodes.get(model.attributes.toNodeID);
+					var node2 = W.model.nodes.get(model.attributes.toNodeID);
 					var nodeGeo2 = node2.geometry.clone();
 					var W2 = nodeGeo2.y * A - nodeGeo2.x * B;
 					var r2 = GetIntersectCoord(A, B, C, W2);
@@ -184,8 +185,8 @@ function SimplifyStreetGeometry() {
 
 					/*segments = [];
 					segments.push(model);
-					Waze.model.actionManager.add(new AddNode(nodeGeo, model));*/
-					Waze.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
+					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
+					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
 
 					console.log("WME-SSG: сегмент #" + (e2 + 1) + " (" + r1[0] + ";" + r1[1] + ") - (" + r2[0] + ";" + r2[1] + ")");
 
