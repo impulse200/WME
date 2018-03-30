@@ -32,6 +32,7 @@ function SimplifyStreetGeometry() {
     });
 
     function DoSimplifyStreetGeometry() {
+<<<<<<< HEAD
 			var W = this.W;
 			if (W.selectionManager.selectedItems.length > 0) {
 				var T1, T2,
@@ -80,6 +81,67 @@ function SimplifyStreetGeometry() {
 								dX = GetDeltaDirect(A1.x, A2.x);
 								dY = GetDeltaDirect(A1.y, A2.y);
 								console.log("WME-SSG: разворачиваем сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
+=======
+        if (W.selectionManager.selectedItems.length > 0) {
+            var T1, T2,
+                t,
+                A = 0.0,
+                B = 0.0,
+                C = 0.0;
+            var correct = true;
+
+			// определим линию выравнивания
+			if (W.selectionManager.selectedItems.length > 0) {
+
+				console.log("WME-SSG: расчёт формулы наклонной прямой...");
+
+				for (var e = 0; e < W.selectionManager.selectedItems.length; e++) {
+					var segment = W.selectionManager.selectedItems[e];
+
+					if (segment.model.type != "segment")
+						continue;
+
+					var geometry = segment.model.geometry;
+
+					// определяем формулу наклонной прямой
+					if (geometry.components.length > 1) {
+						var A1 = geometry.components[0].clone(),
+							A2 = geometry.components[geometry.components.length - 1].clone();
+
+						var dX = GetDeltaDirect(A1.x, A2.x);
+						var dY = GetDeltaDirect(A1.y, A2.y);
+
+						var tX = e > 0 ? GetDeltaDirect(T1.x, T2.x) : 0;
+						var tY = e > 0 ? GetDeltaDirect(T1.y, T2.y) : 0;
+						console.log("WME-SSG: расчётный вектор линии - tX=" + tX + ", tY=" + tY);
+						
+						console.log("WME-SSG: сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
+
+						if (dX < 0) {
+							t = A1.x;
+							A1.x = A2.x;
+							A2.x = t;
+
+							t = A1.y;
+							A1.y = A2.y;
+							A2.y = t;
+
+							dX = GetDeltaDirect(A1.x, A2.x);
+							dY = GetDeltaDirect(A1.y, A2.y);
+							console.log("WME-SSG: разворачиваем сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
+						}
+
+						if (e === 0) {
+							T1 = A1.clone();
+							T2 = A2.clone();
+						} else {
+							if (A1.x < T1.x) {
+								T1.x = A1.x;
+								T1.y = A1.y;
+
+								/*if ((tY > 0 && A1.y < T1.y) || (tY < 0 && A1.y > T1.y))
+									T1.y = A1.y;*/
+>>>>>>> 0597300eb78e30a5c55f04ecfd16eb2e72cc72c8
 							}
 
 							if (e === 0) {
@@ -125,11 +187,19 @@ function SimplifyStreetGeometry() {
 					seg1geo.comments[1].x = T2.x;
 					seg1geo.comments[1].y = T2.y;
 
+<<<<<<< HEAD
 					var newseg1 = new W.Feature.Vector.Segment(seg1geo);
 					newseg1.attributes.fromNodeID = null;
 					newseg1.attributes.toNodeID = null;
 
 					W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
+=======
+				var newseg1 = new W.Feature.Vector.Segment(seg1geo);
+				newseg1.attributes.fromNodeID = null;
+				newseg1.attributes.toNodeID = null;
+
+				W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
+>>>>>>> 0597300eb78e30a5c55f04ecfd16eb2e72cc72c8
 
 			} else
 				correct = false;
@@ -182,7 +252,11 @@ function SimplifyStreetGeometry() {
 					/*var segments = [];
 					segments.push(model);
 					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
+<<<<<<< HEAD
 					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo, connectedSegObjs, emptyObj));
+=======
+					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
+>>>>>>> 0597300eb78e30a5c55f04ecfd16eb2e72cc72c8
 
 					var node2 = W.model.nodes.get(model.attributes.toNodeID);
 					var nodeGeo2 = node2.geometry.clone();
@@ -200,7 +274,11 @@ function SimplifyStreetGeometry() {
 					/*segments = [];
 					segments.push(model);
 					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
+<<<<<<< HEAD
 					W.model.actionManager.add(new MoveNode(node2, node2.geometry, nodeGeo2, connectedSegObjs, emptyObj));
+=======
+					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo));
+>>>>>>> 0597300eb78e30a5c55f04ecfd16eb2e72cc72c8
 
 					console.log("WME-SSG: сегмент #" + (e2 + 1) + " (" + r1[0] + ";" + r1[1] + ") - (" + r2[0] + ";" + r2[1] + ")");
 
