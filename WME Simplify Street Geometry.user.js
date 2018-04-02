@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         WME Simplify Street Geometry fork
-// @version      0.6.fork.0.0.2
-// @description  Выравнивание сегментов улицы в ровную линию. Автор исходного скрипта - jonny3D
-// @author       impulse200
+// @name         WME Simplify Street Geometry Fork
+// @version      0.8.fork.0.0.1
+// @description  Выравнивание сегментов улицы в ровную линию.
+// @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
 // @include				https://www.waze.com/*/editor*
 // @include				https://beta.waze.com/editor*
@@ -130,6 +130,7 @@ function SimplifyStreetGeometry() {
 					newseg1.attributes.toNodeID = null;
 
 					W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
+
 			} else
 				correct = false;
 
@@ -178,6 +179,7 @@ function SimplifyStreetGeometry() {
 							connectedSegObjs[segid] = W.model.segments.get(segid).geometry.clone();
 					}
 					
+  
 					/*var segments = [];
 					segments.push(model);
 					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
@@ -196,6 +198,7 @@ function SimplifyStreetGeometry() {
 							connectedSegObjs[segid] = W.model.segments.get(segid).geometry.clone();
 					}
 					
+  
 					/*segments = [];
 					segments.push(model);
 					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
@@ -207,6 +210,7 @@ function SimplifyStreetGeometry() {
 			}
 		} // W.selectionManager.selectedItems.length > 0
 	}
+  
 
 	// рассчитаем пересчечение перпендикуляра точки с наклонной прямой
 	function GetIntersectCoord(A, B, C, D) {
