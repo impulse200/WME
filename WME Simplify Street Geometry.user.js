@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME Simplify Street Geometry Fork
-// @version      0.8.fork.0.0.3
+// @version      0.8.fork.0.0.4
 // @description  Выравнивание сегментов улицы в ровную линию.
 // @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
@@ -30,7 +30,7 @@ function bootstrap(tries) {
 }
 
 function initSimplifyStreetGeometry() {
-		console.log('WME-SSG: initSimplifyStreetGeometry()');
+		console.log('WME-SSG: in initSimplifyStreetGeometry()');
     UpdateSegmentGeometry = require("Waze/Action/UpdateSegmentGeometry");
     MoveNode = require("Waze/Action/MoveNode");
     AddNode = require("Waze/Action/AddNode");
@@ -53,11 +53,11 @@ function initSimplifyStreetGeometry() {
 			var restrictionsDiv = $('.edit-restrictions').parent();
 			restrictionsDiv.after( $ssgDiv );
 
-			$('#sidebar').on('click', '#SimplifyStreetGeometry', function(event) {
+			$('#SimplifyStreetGeometry').click( function(event) {
 					event.preventDefault();
 					DoSimplifyStreetGeometry();
 			});
-			$('#sidebar').on('click', '#OrtogonalizeStreetGeometry', function(event) {
+			$('#OrtogonalizeStreetGeometry').click( function(event) {
 					event.preventDefault();
 					ssgDoOrtogonalizeStreetGeometry();
 			});
@@ -74,6 +74,8 @@ function initSimplifyStreetGeometry() {
 		}
 
 		function DoSimplifyStreetGeometry() {
+			console.log('WME-SSG: in DoSimplifyStreetGeometry()');
+			
 			if (W.selectionManager.selectedItems.length > 0) {
 				var T1, T2,
 						t,
