@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME Simplify Street Geometry Fork
-// @version      0.8.fork.0.0.1
+// @version      0.8.fork.0.0.2
 // @description  Выравнивание сегментов улицы в ровную линию.
 // @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
@@ -12,26 +12,58 @@
 // @namespace    https://greasyfork.org/users/12985
 // ==/UserScript==
 
-setTimeout(SimplifyStreetGeometry, 1999);
+(function() {
+    'use strict';
 
-function SimplifyStreetGeometry() {
-		console.log('WME-SSG: init()');
+// globals vars for script
+var UpdateSegmentGeometry, MoveNode, AddNode;
+
+function bootstrap(tries) {
+		tries = tries || 1;
+
+		if (W && W.map &&
+				W.model && W.loginManager.user &&
+				$ ) {
+				initSimplifyStreetGeometry();
+		} else if (tries < 1000)
+				setTimeout(function () {bootstrap(tries++);}, 200);
+}
+
+function initSimplifyStreetGeometry() {
+		console.log('WME-SSG: initSimplifyStreetGeometry()');
     UpdateSegmentGeometry = require("Waze/Action/UpdateSegmentGeometry");
     MoveNode = require("Waze/Action/MoveNode");
     AddNode = require("Waze/Action/AddNode");
 
     W.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
-
+}
     function insertSimplifyStreetGeometryButtons() {
-        $('.edit-restrictions').after('<button id="SimplifyStreetGeometry" class="action-button btn btn-default">Выровнять улицу</button>');
-    }
+			console.log('WME-SSG: insertSimplifyStreetGeometryButtons()');
 
-    $('#sidebar').on('click', '#SimplifyStreetGeometry', function(event) {
-        event.preventDefault();
-        DoSimplifyStreetGeometry();
-    });
+			var $ssgDiv = $('<div>');
+			$ssgDiv.html([
+				'<div class="form-group">',
+					'<label class="control-label">Simplify/Ortogonalize</label>',
+						'<button id="SimplifyStreetGeometry" class="waze-btn waze-btn-small waze-btn-white">Выровнять улицу</button>',
+						'<button id="OrtogonalizeStreetGeometry" class="waze-btn waze-btn-small waze-btn-white">90*</button>',
+					'</div>'
+				].join(' ')
+			);
 
-    function DoSimplifyStreetGeometry() {
+			var restrictionsDiv = $('.edit-restrictions').parent();
+			restrictionsDiv.after( $ssgDiv );
+
+			$('#sidebar').on('click', '#SimplifyStreetGeometry', function(event) {
+					event.preventDefault();
+					DoSimplifyStreetGeometry();
+			});
+			$('#sidebar').on('click', '#OrtogonalizeStreetGeometry', function(event) {
+					event.preventDefault();
+					ssgDoOrtogonalizeStreetGeometry();
+			});
+		}
+
+		function DoSimplifyStreetGeometry() {
 			if (W.selectionManager.selectedItems.length > 0) {
 				var T1, T2,
 						t,
@@ -65,7 +97,7 @@ function SimplifyStreetGeometry() {
 							var tX = e > 0 ? GetDeltaDirect(T1.x, T2.x) : 0;
 							var tY = e > 0 ? GetDeltaDirect(T1.y, T2.y) : 0;
 							console.log("WME-SSG: расчётный вектор линии - tX=" + tX + ", tY=" + tY);
-							
+
 							console.log("WME-SSG: сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
 
 							if (dX < 0) {
@@ -145,72 +177,50 @@ function SimplifyStreetGeometry() {
 					if (model.type != "segment")
 						continue;
 
-					var newGeometry = model.geometry.clone();
-					var flagSimpled = false;
-
-					// удаляем лишние узлы
-					if (newGeometry.components.length > 2) {
-						newGeometry.components.splice(1, newGeometry.components.length - 2);
-						flagSimpled = true;
-					}
-
 					// упрощаем сегмент, если нужно
-					if (flagSimpled)
-						W.model.actionManager.add(new UpdateSegmentGeometry(model, model.geometry, newGeometry));
-
-					//alert(model.attributes.fromNodeID);
+					ssgSimplifySegment( segment2 );
 
 					// работа с узлом
 					var node = W.model.nodes.get(model.attributes.fromNodeID);
-					var nodeGeo = node.geometry.clone();
-					var D = nodeGeo.y * A - nodeGeo.x * B;
-
-					//console.log("WME-SSG: W=" + W);
-
+					var D = node.attributes.geometry.y * A - node.attributes.geometry.x * B;
 					var r1 = GetIntersectCoord(A, B, C, D);
-					nodeGeo.x = r1[0];
-					nodeGeo.y = r1[1];
-					nodeGeo.calculateBounds();
-
-					var connectedSegObjs = {};
-					var emptyObj = {};
-					for (var j = 0; j < node.attributes.segIDs.length; j++) {
-							var segid = node.attributes.segIDs[j];
-							connectedSegObjs[segid] = W.model.segments.get(segid).geometry.clone();
-					}
-					
-  
-					/*var segments = [];
-					segments.push(model);
-					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
-					W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo, connectedSegObjs, emptyObj));
+					ssgMoveNode(node, r1);
 
 					var node2 = W.model.nodes.get(model.attributes.toNodeID);
-					var nodeGeo2 = node2.geometry.clone();
-					var D2 = nodeGeo2.y * A - nodeGeo2.x * B;
+					var D2 = node2.attributes.geometry.y * A - node2.attributes.geometry.x * B;
 					var r2 = GetIntersectCoord(A, B, C, D2);
-					nodeGeo2.x = r2[0];
-					nodeGeo2.y = r2[1];
-					nodeGeo2.calculateBounds();
-
-					for (var j = 0; j < node2.attributes.segIDs.length; j++) {
-							var segid = node2.attributes.segIDs[j];
-							connectedSegObjs[segid] = W.model.segments.get(segid).geometry.clone();
-					}
-					
-  
-					/*segments = [];
-					segments.push(model);
-					W.model.actionManager.add(new AddNode(nodeGeo, model));*/
-					W.model.actionManager.add(new MoveNode(node2, node2.geometry, nodeGeo2, connectedSegObjs, emptyObj));
+					ssgMoveNode(node2, r2);
 
 					console.log("WME-SSG: сегмент #" + (e2 + 1) + " (" + r1[0] + ";" + r1[1] + ") - (" + r2[0] + ";" + r2[1] + ")");
-
 				}
 			}
 		} // W.selectionManager.selectedItems.length > 0
 	}
-  
+
+	/**
+	 * выстраивает два выбранных сегмента перпендикулярно друг другу
+	 * перемещая их общий узел
+	 */
+	function ssgDoOrtogonalizeStreetGeometry() {
+		console.log('WME-SSG: in DoOrtogonalizeStreetGeometry()');
+		if (W.selectionManager.selectedItems.length != 2) {
+			console.log('WME-SSG: only two entities must be selected');
+			return;
+		}
+		seg1 = W.selectionManager.selectedItems[0];
+		seg2 = W.selectionManager.selectedItems[1];
+		if (seg1.model.type != 'segment' || seg2.model.type != 'segment') {
+			console.log('WME-SSG: only segments must be selected');
+			return;
+		}
+
+		// simplify both segments
+		ssgSimplifySegment( seg1 );
+		ssgSimplifySegment( seg2 );
+
+		// calculate new position for node
+		// move node and its segments to calculated position
+	}
 
 	// рассчитаем пересчечение перпендикуляра точки с наклонной прямой
 	function GetIntersectCoord(A, B, C, D) {
@@ -239,5 +249,44 @@ function SimplifyStreetGeometry() {
 
 		return d;
 	}
-}
 
+	/**
+	 * Выпрямляет сегмент, удаляя все его узлы. Остаются только начальный и конечный узлы.
+	 * @param segment - сегмент, который необходимо упростить
+	 */
+	function ssgSimplifySegment( segment ) {
+		console.log('WME-SSG: in ssgSimplifySegment()');
+		if (segment.model.type != "segment")
+			return;
+
+		if (segment.geometry.components.length > 2) {
+			var newGeometry = segment.geometry.clone();
+			newGeometry.components.splice(1, newGeometry.components.length - 2);
+			W.model.actionManager.add(new UpdateSegmentGeometry(segment.model, segment.model.geometry, newGeometry));
+		}
+	}
+
+	/**
+	 * Перемещает узел
+	 * @param node - перемещаемый узел
+	 * @param coord[2] - массив из двух элементов - координаты, в которые перемещается узел
+	 */
+	function ssgMoveNode(node, coords) {
+		console.log('WME-SSG: in ssgMoveNode()');
+		var nodeGeo = node.geometry.clone();
+		nodeGeo.x = coords[0];
+		nodeGeo.y = coords[1];
+		nodeGeo.calculateBounds();
+
+		var connectedSegObjs = {};
+		var emptyObj = {};
+		for (var j = 0; j < node.attributes.segIDs.length; j++) {
+				var segid = node.attributes.segIDs[j];
+				connectedSegObjs[segid] = W.model.segments.get(segid).geometry.clone();
+		}
+		W.model.actionManager.add(new MoveNode(node, node.geometry, nodeGeo, connectedSegObjs, emptyObj));
+	}
+
+
+bootstrap();
+})();
