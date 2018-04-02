@@ -217,13 +217,28 @@ function initSimplifyStreetGeometry() {
 			console.log('WME-SSG: only two entities must be selected');
 			return;
 		}
-		seg1 = W.selectionManager.selectedItems[0];
-		seg2 = W.selectionManager.selectedItems[1];
+		var seg1 = W.selectionManager.selectedItems[0],
+				seg2 = W.selectionManager.selectedItems[1],
+				seg1Attrs = seg1.model.attributes,
+				seg2Attrs = seg2.model.attributes;
+		var commonNodeID;
+		
 		if (seg1.model.type != 'segment' || seg2.model.type != 'segment') {
 			console.log('WME-SSG: only segments must be selected');
 			return;
 		}
-
+		
+		if (seg1Attrs.fromNodeID === seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.fromNodeID;
+		if (seg1Attrs.fromNodeID === seg2Attrs.toNodeID) commonNodeID = seg1Attrs.fromNodeID;
+		if (seg1Attrs.toNodeID === seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.toNodeID;
+		if (seg1Attrs.toNodeID === seg2Attrs.toNodeID) commonNodeID = seg1Attrs.toNodeID;
+		if (!commonNodeID) {
+			console.log('WME-SSG: segments does not have common node.');
+			return;
+		}
+		else 
+			console.log('WME-SSG: common node ID: '+ commonNodeID);
+		
 		// simplify both segments
 		ssgSimplifySegment( seg1 );
 		ssgSimplifySegment( seg2 );
