@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME Simplify Street Geometry Fork
-// @version      0.8.fork.0.0.2
+// @version      0.8.fork.0.0.3
 // @description  Выравнивание сегментов улицы в ровную линию.
 // @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
@@ -61,6 +61,14 @@ function initSimplifyStreetGeometry() {
 					event.preventDefault();
 					ssgDoOrtogonalizeStreetGeometry();
 			});
+
+			// disable buttons if there is less then two segments selected
+			if (W.selectionManager.selectedItems.length < 2) {
+				$('#SimplifyStreetGeometry').attr('disabled',true);
+				$('#OrtogonalizeStreetGeometry').attr('disabled',true);
+			}
+			if (W.selectionManager.selectedItems.length != 2)
+				$('#OrtogonalizeStreetGeometry').attr('disabled',true);
 		}
 
 		function DoSimplifyStreetGeometry() {
