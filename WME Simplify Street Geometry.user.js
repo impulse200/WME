@@ -30,7 +30,7 @@ function bootstrap(tries) {
 }
 
 function initSimplifyStreetGeometry() {
-		console.log('WME-SSG: in initSimplifyStreetGeometry()');
+	console.log('WME-SSG: in initSimplifyStreetGeometry()');
     UpdateSegmentGeometry = require("Waze/Action/UpdateSegmentGeometry");
     MoveNode = require("Waze/Action/MoveNode");
     AddNode = require("Waze/Action/AddNode");
@@ -38,8 +38,8 @@ function initSimplifyStreetGeometry() {
     W.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
 }
     function insertSimplifyStreetGeometryButtons() {
-			console.log('WME-SSG: insertSimplifyStreetGeometryButtons()');
-
+		console.log('WME-SSG: insertSimplifyStreetGeometryButtons()');
+		if (W.selectionManager.selectedItems.length > 0 && W.selectionManager.selectedItems[0].model.type == 'segment') {
 			var $ssgDiv = $('<div>');
 			$ssgDiv.html([
 				'<div class="form-group">',
@@ -72,6 +72,7 @@ function initSimplifyStreetGeometry() {
 			if (W.selectionManager.selectedItems.length != 2)
 				$('#OrtogonalizeStreetGeometry').attr('disabled',true);
 		}
+	}
 
 		function DoSimplifyStreetGeometry() {
 			console.log('WME-SSG: in DoSimplifyStreetGeometry()');
