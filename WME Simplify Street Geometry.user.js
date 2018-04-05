@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME Simplify Street Geometry Fork
-// @version      0.8.fork.0.0.4
+// @version      0.8.fork.0.1.0
 // @description  Выравнивание сегментов улицы в ровную линию.
 // @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
@@ -74,107 +74,113 @@ function initSimplifyStreetGeometry() {
 		}
 	}
 
-		function DoSimplifyStreetGeometry() {
-			console.log('WME-SSG: in DoSimplifyStreetGeometry()');
+	/**
+	 * Выравнивает сегменты в прямую линию, перемещая промежуточные узлы
+	 * в точки пересечения перпендикуляров к вычисленной прямой, проходящей через
+	 * начальный и конечный узлы выделения
+	 * A,B,C - параметры вычисленной прямой уравнения Аx + By + C = 0
+	 */
+	function DoSimplifyStreetGeometry() {
+		console.log('WME-SSG: in DoSimplifyStreetGeometry()');
 			
+		if (W.selectionManager.selectedItems.length > 0) {
+			var T1, T2,
+				t,
+				A = 0.0,
+				B = 0.0,
+				C = 0.0,
+				D = 0.0;
+			var correct = true;
+
+			// определим линию выравнивания
 			if (W.selectionManager.selectedItems.length > 0) {
-				var T1, T2,
-						t,
-						A = 0.0,
-						B = 0.0,
-						C = 0.0,
-						D = 0.0;
-				var correct = true;
 
-				// определим линию выравнивания
-				if (W.selectionManager.selectedItems.length > 0) {
+				console.log("WME-SSG: расчёт формулы наклонной прямой...");
 
-					console.log("WME-SSG: расчёт формулы наклонной прямой...");
+				for (var e = 0; e < W.selectionManager.selectedItems.length; e++) {
+					var segment = W.selectionManager.selectedItems[e];
 
-					for (var e = 0; e < W.selectionManager.selectedItems.length; e++) {
-						var segment = W.selectionManager.selectedItems[e];
+					if (segment.model.type != "segment")
+						continue;
 
-						if (segment.model.type != "segment")
-							continue;
+					var geometry = segment.model.geometry;
 
-						var geometry = segment.model.geometry;
+					// определяем формулу наклонной прямой
+					if (geometry.components.length > 1) {
+						var A1 = geometry.components[0].clone(),
+							A2 = geometry.components[geometry.components.length - 1].clone();
 
-						// определяем формулу наклонной прямой
-						if (geometry.components.length > 1) {
-							var A1 = geometry.components[0].clone(),
-								A2 = geometry.components[geometry.components.length - 1].clone();
+						var dX = GetDeltaDirect(A1.x, A2.x);
+						var dY = GetDeltaDirect(A1.y, A2.y);
 
-							var dX = GetDeltaDirect(A1.x, A2.x);
-							var dY = GetDeltaDirect(A1.y, A2.y);
+						var tX = e > 0 ? GetDeltaDirect(T1.x, T2.x) : 0;
+						var tY = e > 0 ? GetDeltaDirect(T1.y, T2.y) : 0;
+						console.log("WME-SSG: расчётный вектор линии - tX=" + tX + ", tY=" + tY);
 
-							var tX = e > 0 ? GetDeltaDirect(T1.x, T2.x) : 0;
-							var tY = e > 0 ? GetDeltaDirect(T1.y, T2.y) : 0;
-							console.log("WME-SSG: расчётный вектор линии - tX=" + tX + ", tY=" + tY);
+						console.log("WME-SSG: сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
 
-							console.log("WME-SSG: сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
+						if (dX < 0) {
+							t = A1.x;
+							A1.x = A2.x;
+							A2.x = t;
 
-							if (dX < 0) {
-								t = A1.x;
-								A1.x = A2.x;
-								A2.x = t;
+							t = A1.y;
+							A1.y = A2.y;
+							A2.y = t;
 
-								t = A1.y;
-								A1.y = A2.y;
-								A2.y = t;
-
-								dX = GetDeltaDirect(A1.x, A2.x);
-								dY = GetDeltaDirect(A1.y, A2.y);
-								console.log("WME-SSG: разворачиваем сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
-							}
-
-							if (e === 0) {
-								T1 = A1.clone();
-								T2 = A2.clone();
-							} else {
-								if (A1.x < T1.x) {
-									T1.x = A1.x;
-									T1.y = A1.y;
-
-									/*if ((tY > 0 && A1.y < T1.y) || (tY < 0 && A1.y > T1.y))
-										T1.y = A1.y;*/
-								}
-
-								if (A2.x > T2.x) {
-									T2.x = A2.x;
-									T2.y = A2.y;
-
-									/*if ((tY > 0 && A2.y > T2.y) || (tY < 0 && A2.y < T2.y))
-										T2.y = A2.y;*/
-								}
-							}
-
-							console.log("WME-SSG: расчётная прямая по (" + T1.x + "; " + T1.y + ") - (" + T2.x + "; " + T2.y + ")");
+							dX = GetDeltaDirect(A1.x, A2.x);
+							dY = GetDeltaDirect(A1.y, A2.y);
+							console.log("WME-SSG: разворачиваем сегмент #" + (e + 1) + " (" + A1.x + "; " + A1.y + ") - (" + A2.x + "; " + A2.y + "), dX=" + dX + ", dY=" + dY);
 						}
+
+						if (e === 0) {
+							T1 = A1.clone();
+							T2 = A2.clone();
+						} else {
+							if (A1.x < T1.x) {
+								T1.x = A1.x;
+								T1.y = A1.y;
+
+								/*if ((tY > 0 && A1.y < T1.y) || (tY < 0 && A1.y > T1.y))
+									T1.y = A1.y;*/
+							}
+
+							if (A2.x > T2.x) {
+								T2.x = A2.x;
+								T2.y = A2.y;
+
+								/*if ((tY > 0 && A2.y > T2.y) || (tY < 0 && A2.y < T2.y))
+									T2.y = A2.y;*/
+							}
+						}
+
+						console.log("WME-SSG: расчётная прямая по (" + T1.x + "; " + T1.y + ") - (" + T2.x + "; " + T2.y + ")");
 					}
+				}
 
-					A = T2.y - T1.y;
-					B = T1.x - T2.x;
-					C = T2.x * T1.y - T1.x * T2.y;
+				A = T2.y - T1.y;
+				B = T1.x - T2.x;
+				C = T2.x * T1.y - T1.x * T2.y;
 
-					console.log("WME-SSG: прямая выравнивания рассчитана.");
-					console.log("WME-SSG: конечные точки: (" + T1.x + ";" + T1.y + ") - (" + T2.x + ";" + T2.y + ")");
-					console.log("WME-SSG: формула прямой: " + A + "x + " + B + "y + " + C);
+				console.log("WME-SSG: прямая выравнивания рассчитана.");
+				console.log("WME-SSG: конечные точки: (" + T1.x + ";" + T1.y + ") - (" + T2.x + ";" + T2.y + ")");
+				console.log("WME-SSG: формула прямой: " + A + "x + " + B + "y + " + C);
 
 
-					// нарисуем контрольную линию
-					/*var seg1geo = geometry.clone();
-					if (seg1geo.components.length > 2)
-						seg1geo.components.splice(1, seg1geo.components.length - 2);
-					seg1geo.comments[0].x = T1.x;
-					seg1geo.comments[0].y = T1.y;
-					seg1geo.comments[1].x = T2.x;
-					seg1geo.comments[1].y = T2.y;
+				// нарисуем контрольную линию
+				/*var seg1geo = geometry.clone();
+				if (seg1geo.components.length > 2)
+					seg1geo.components.splice(1, seg1geo.components.length - 2);
+				seg1geo.comments[0].x = T1.x;
+				seg1geo.comments[0].y = T1.y;
+				seg1geo.comments[1].x = T2.x;
+				seg1geo.comments[1].y = T2.y;
 
-					var newseg1 = new W.Feature.Vector.Segment(seg1geo);
-					newseg1.attributes.fromNodeID = null;
-					newseg1.attributes.toNodeID = null;
+				var newseg1 = new W.Feature.Vector.Segment(seg1geo);
+				newseg1.attributes.fromNodeID = null;
+				newseg1.attributes.toNodeID = null;
 
-					W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
+				W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
 
 			} else
 				correct = false;
@@ -221,36 +227,59 @@ function initSimplifyStreetGeometry() {
 			return;
 		}
 		var seg1 = W.selectionManager.selectedItems[0],
-				seg2 = W.selectionManager.selectedItems[1],
-				seg1Attrs = seg1.model.attributes,
-				seg2Attrs = seg2.model.attributes;
+			seg2 = W.selectionManager.selectedItems[1],
+			seg1Attrs = seg1.model.attributes,
+			seg2Attrs = seg2.model.attributes;
 		var commonNodeID;
-		
+
 		if (seg1.model.type != 'segment' || seg2.model.type != 'segment') {
 			console.log('WME-SSG: only segments must be selected');
 			return;
 		}
-		
-		if (seg1Attrs.fromNodeID === seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.fromNodeID;
-		if (seg1Attrs.fromNodeID === seg2Attrs.toNodeID) commonNodeID = seg1Attrs.fromNodeID;
-		if (seg1Attrs.toNodeID === seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.toNodeID;
-		if (seg1Attrs.toNodeID === seg2Attrs.toNodeID) commonNodeID = seg1Attrs.toNodeID;
+
+		// ID общего узла
+		var node = {};
+		if (seg1Attrs.fromNodeID == seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.fromNodeID;
+		if (seg1Attrs.fromNodeID == seg2Attrs.toNodeID) commonNodeID = seg1Attrs.fromNodeID;
+		if (seg1Attrs.toNodeID == seg2Attrs.fromNodeID) commonNodeID = seg1Attrs.toNodeID;
+		if (seg1Attrs.toNodeID == seg2Attrs.toNodeID) commonNodeID = seg1Attrs.toNodeID;
 		if (!commonNodeID) {
 			console.log('WME-SSG: segments does not have common node.');
 			return;
 		}
-		else 
+		else {
 			console.log('WME-SSG: common node ID: '+ commonNodeID);
+			node = W.model.nodes.get(commonNodeID);
+		}
+		// ID другого узла второго сегмента. От него будем строить перпендикуляр
+		var otherNodeID = commonNodeID == seg2Attrs.fromNodeID ? seg2Attrs.toNodeID : seg2Attrs.fromNodeID;
+		var otherNode = W.model.nodes.get(otherNodeID);
 		
-		// simplify both segments
+		// упростим оба сегмента
+		// TODO: подумать, можно ли использовать координаты промежуточных узлов и не упрощать сегменты
 		ssgSimplifySegment( seg1 );
 		ssgSimplifySegment( seg2 );
 
-		// calculate new position for node
+		// вычислим новое положение общего узла
+		// координаты концов первого сегмента
+		var x1 = seg1.model.getFromNode().attributes.geometry.x,
+			y1 = seg1.model.getFromNode().attributes.geometry.y,
+			x2 = seg1.model.getToNode().attributes.geometry.x,
+			y2 = seg1.model.getToNode().attributes.geometry.y;
+
+		// коэффициенты в формуле прямой, проходящей через концы первого сегмента
+		var A = y1 - y2,
+			B = x2 - x1,
+			C = x1 * y2 - x2 * y1,
+		// что такое D ???
+			D = otherNode.attributes.geometry.y * A - otherNode.attributes.geometry.x * B
+		;
+
 		// move node and its segments to calculated position
+		ssgMoveNode(node, GetIntersectCoord(A, B, C, D));
 	}
 
-	// рассчитаем пересчечение перпендикуляра точки с наклонной прямой
+	// рассчитаем пересечение перпендикуляра точки с наклонной прямой
 	function GetIntersectCoord(A, B, C, D) {
 		/*// формулы тут: https://otvet.mail.ru/question/36001356
 		var r = [2];
