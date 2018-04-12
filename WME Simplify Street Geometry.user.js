@@ -17,6 +17,7 @@
 
 // globals vars for script
 var UpdateSegmentGeometry, MoveNode, AddNode;
+var ssgSelection;
 
 function bootstrap(tries) {
 		tries = tries || 1;
@@ -36,11 +37,16 @@ function initSimplifyStreetGeometry() {
     AddNode = require("Waze/Action/AddNode");
 
     W.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
+
+	if(W.selectionManager.selectedItems == undefined) // we're on new/beta release of WME
+		ssgSelection = W.selectionManager._selectedFeatures;
+	else
+		ssgSelection = W.selectionManager.selectedItems;
 }
+
     function insertSimplifyStreetGeometryButtons() {
 		console.log('WME-SSG: insertSimplifyStreetGeometryButtons()');
-		var selection = W.selectionManager.getSelectedFeatures();
-		if (selection.length > 0 && selection[0].model.type == 'segment') {
+		if (ssgSelection.length > 0 && ssgSelection[0].model.type == 'segment') {
 			var $ssgDiv = $('<div>');
 			$ssgDiv.html([
 				'<div class="form-group">',
@@ -65,12 +71,12 @@ function initSimplifyStreetGeometry() {
 
 			// disable buttons if there are less then two items selected
 			// I hope that there will no be segment and node selected simultaneously at any time.
-			if (selection.length < 2) {
+			if (ssgSelection.length < 2) {
 				$('#SimplifyStreetGeometry').attr('disabled',true);
 				$('#OrtogonalizeStreetGeometry').attr('disabled',true);
 			}
 			// disable buttons if there are not exactly two items selected
-			if (selection.length != 2)
+			if (ssgSelection.length != 2)
 				$('#OrtogonalizeStreetGeometry').attr('disabled',true);
 		}
 	}
@@ -84,9 +90,7 @@ function initSimplifyStreetGeometry() {
 	function DoSimplifyStreetGeometry() {
 		console.log('WME-SSG: in DoSimplifyStreetGeometry()');
 
-		var selection = W.selectionManager.getSelectedFeatures();
-
-		if (selection.length > 0) {
+		if (ssgSelection.length > 0) {
 			var T1, T2,
 				t,
 				A = 0.0,
@@ -98,8 +102,8 @@ function initSimplifyStreetGeometry() {
 			// определим линию выравнивания
 			console.log("WME-SSG: расчёт формулы наклонной прямой...");
 
-			for (var e = 0; e < selection.length; e++) {
-				var segment = selection[e];
+			for (var e = 0; e < ssgSelection.length; e++) {
+				var segment = ssgSelection[e];
 
 				if (segment.model.type != "segment")
 					continue;
@@ -183,10 +187,10 @@ function initSimplifyStreetGeometry() {
 
 			W.model.actionManager.add(new W.Action.AddSegment(newseg1));*/
 
-			console.log("WME-SSG: выравниваем сегменты... "+ selection.length);
+			console.log("WME-SSG: выравниваем сегменты... "+ ssgSelection.length);
 
-			for (var e2 = 0; e2 < selection.length; e2++) {
-				var segment2 = selection[e2];
+			for (var e2 = 0; e2 < ssgSelection.length; e2++) {
+				var segment2 = ssgSelection[e2];
 				var model = segment2.model;
 
 				if (model.type != "segment")
@@ -208,7 +212,7 @@ function initSimplifyStreetGeometry() {
 
 				console.log("WME-SSG: сегмент #" + (e2 + 1) + " (" + r1[0] + ";" + r1[1] + ") - (" + r2[0] + ";" + r2[1] + ")");
 			}
-		} // selection.length > 0
+		} // ssgSelection.length > 0
 	}
 
 	/**
@@ -218,13 +222,12 @@ function initSimplifyStreetGeometry() {
 	function ssgDoOrtogonalizeStreetGeometry() {
 		console.log('WME-SSG: in DoOrtogonalizeStreetGeometry()');
 		
-		var selection = W.selectionManager.getSelectedFeatures();
-		if (selection.length != 2) {
+		if (ssgSelection.length != 2) {
 			console.log('WME-SSG: only two entities must be selected');
 			return;
 		}
-		var seg1 = selection[0],
-			seg2 = selection[1],
+		var seg1 = ssgSelection[0],
+			seg2 = ssgSelection[1],
 			seg1Attrs = seg1.model.attributes,
 			seg2Attrs = seg2.model.attributes;
 		var commonNodeID;
