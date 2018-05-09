@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME Simplify Street Geometry Fork
-// @version      0.8.fork.0.1.1
+// @version      0.8.fork.0.1.2
 // @description  Выравнивание сегментов улицы в ровную линию.
 // @author       jonny3D, impulse200
 // @include				https://www.waze.com/editor*
@@ -37,15 +37,11 @@ function initSimplifyStreetGeometry() {
     AddNode = require("Waze/Action/AddNode");
 
     W.selectionManager.events.register("selectionchanged", null, insertSimplifyStreetGeometryButtons);
-
-	if(W.selectionManager.selectedItems == undefined) // we're on new/beta release of WME
-		ssgSelection = W.selectionManager._selectedFeatures;
-	else
-		ssgSelection = W.selectionManager.selectedItems;
 }
 
     function insertSimplifyStreetGeometryButtons() {
 		console.log('WME-SSG: insertSimplifyStreetGeometryButtons()');
+		ssgSelection = W.selectionManager.getSelectedFeatures();
 		if (ssgSelection.length > 0 && ssgSelection[0].model.type == 'segment') {
 			var $ssgDiv = $('<div>');
 			$ssgDiv.html([
